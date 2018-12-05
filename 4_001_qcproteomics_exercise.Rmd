@@ -1,0 +1,286 @@
+---
+title: "Proteomics"
+author: "Marc A.T. Teunis; Rene Van de Ploeg; Robert Jan Veldman"
+date: "December 3, 2017"
+output:
+  html_document:
+    css: d:/r_projects/hp_r_course/exercises/exercises_style.css
+---
+
+Steps in this Demo Case:
+
+ - Filter the data for experiment 142 to 149: Different cells, Affinity Matrix (Kinobeads)
+ - Group the data for each Accession number (`protein` variable) and experiment
+ - Summarize the `spectrum_count` data for each protein
+ - Get cell line information from a different file to convert the `experiment_id`s to cell lines names.
+ - Create a heatmap using the `pheatmap` package. Plot the cell-type on the X-axis and the protein-names on the y-axis of your heatmaps.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(results = 'show',
+                      fig.show = 'show',
+                      echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      error = FALSE)
+```
+
+```{r, root_1, echo=TRUE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r, packages}
+library(tidyverse)
+```
+
+__Write an Rmd file, containing code chunks (if applicable) and answer all the questions below. Store the file in a folder called: "./answers_exercises" in your course project folder. Give this file the same name as the title of the current Rmd file__
+
+## Literature
+
+The case used in this exercise is from Bantscheff et al., 2007 (see zip-archive "4_001_qcproteomics_literature.zip")
+
+## Load the data
+```{r}
+
+#nbt1328_S3 <- readr::read_delim(file = file.path(root, "data", "nbt1328-S3.txt"),
+#                                delim = "\t", skip = 2)
+nbt1328_S2 <- readr::read_delim(file = file.path(root, "data", "nbt1328-S2.txt"),
+                                delim = "\t", skip = 4)
+
+head(nbt1328_S2)
+#head(nbt1328_S3)
+
+```
+
+## Inspect the data
+Answer the following questions:
+ 
+1A) How many obeservations does the file "nbt1328-S2.txt" have?
+ 
+1B) How many unique proteins are their in both datasets? You can use the command `distinct` or `unique` here
+
+**ANSWER**
+
+2A) What does the following code do? Why?
+```{r}
+names(nbt1328_S2) <- stringr::str_replace_all(names(nbt1328_S2), pattern = " ", 
+                                                                 replacement = "_") %>%
+  tolower()
+
+
+names(nbt1328_S2) <- stringr::str_replace_all(names(nbt1328_S2), pattern = "\\.", 
+                                                                 replacement = "")
+
+names(nbt1328_S2)
+```
+
+2B) Select the following variables from the dataframe `nbt1328_S2`
+ 
+ - `ipi_acc_no`                
+ - `protein`                   
+ - `kinase`                   
+ - `experiment_id`             
+ - `spectrum_count`  
+ 
+**ANSWER** 
+ 
+ 
+ 
+ 
+ 
+ 
+2C) Which variables are numeric? Do you need to change the class of these variables? Use (`head`, or the `class` command)
+
+**ANSWER**
+
+
+
+
+
+
+## Summarize the data
+
+Summarize the data for the total of experiments in `nbt1328_s2` running the following code:
+Discuss with your neighbour the code steps, do you understand what is happening?
+I will pick somebody to expplain, so be prepared!
+```{r}
+nbt1328_S2
+names(nbt1328_S2)
+
+## check which experiment is available
+#levels(as.factor(nbt1328_S2$experiment_id))
+#nbt1328_S2$experiment_id
+
+experiments <- c(142:149) %>% as.character()
+
+nbt1328_S2_summary <- nbt1328_S2 %>%
+  # filter for experiments:
+  dplyr::filter(as.character(experiment_id) %in% as.character(experiments)) %>% 
+  group_by(ipi_acc_no, protein, experiment_id) %>%
+  summarise(sum_counts = sum(as.numeric(spectrum_count))) 
+
+nbt1328_S2_summary <- nbt1328_S2_summary %>% na.omit()
+nbt1328_S2_summary
+```
+
+3A) Replicating the following figure (partly:)
+For the following figure we will use only the `complete cases` for the data in table `nbt1382_s2`. This means only data that is available for each experiment (cell type 142-149, see file "data/labellings_qcproteomics.txt"). This will partly recreate figure 1 of the paper by Bantscheff et al., 2007.
+ 
+Figure 1 from the paper:
+```{r, out.width="500px"}
+knitr::include_graphics(file.path(root, "images", "bantscheff_figure_1.png"))
+```
+
+
+```{r}
+nbt1328_S2_summary %>%
+ggplot(aes(y = sum_counts, x = experiment_id)) +
+  geom_point(position = "jitter") 
+
+
+```
+
+## Add labellings to data
+```{r}
+## load data
+labelling <- read_delim(file.path(root, "data", "labellings_qcproteomics.txt"),
+                         delim = " ") 
+
+## select fist two columns
+names(labelling)
+labelling <- labelling[, c(1:5)]
+head(labelling)
+names(labelling) <- c("experiment_id", "cell_line", "method", "chemical", "profile")
+head(labelling)
+labelling
+## select labelling for heatmap below
+labels <- labelling %>%
+  dplyr::filter(experiment_id %in% experiments)
+
+labels <- labels$cell_line
+
+labels
+```
+
+## Prepare data
+```{r}
+#install.packages("gplots")
+library(gplots)
+library(tidyverse)
+
+
+## join with labelling
+data <- nbt1328_S2_summary
+
+#labelling$experiment_id <- as.character(labelling$experiment_id)
+#data <- dplyr::left_join(data, labelling, by = "experiment_id")
+
+## wide format
+data <- data %>%
+  spread(key = experiment_id, value = sum_counts) %>%
+      as.data.frame() 
+
+## isolate ck1a
+ck1a <- data %>%
+  select(`146`, ipi_acc_no, protein) %>%
+  dplyr::filter(ipi_acc_no == "IPI00448798")
+
+## remove NAs
+data <- data %>%
+  na.omit()
+
+## Check for duplicate observations
+ind <- duplicated(data$ipi_acc_no)
+data <- data[!ind,]
+data %>% head(2)
+```
+
+## Create matrix from the summary data
+```{r}
+rnames <- data[,2]                            # assign labels in column 1 to "rnames"
+unique(rnames)
+data <- as.matrix(data[,3:ncol(data)])  # transform column 2-5 into a matrix
+row.names(data) <- rnames                  # assign row names
+head(data)
+
+```
+
+## Create heatmap
+
+**Discuss the code below with your neighbour!** 
+
+Did we succeed to reproduce (partly) the heatmap (figure 1) from the paper Bantscheff et al., 2007?
+
+For the heatmap we use the package `pheatmap`. There are a lot of other packages in R you can use.
+```{r, fig.height= 16}
+?pheatmap
+#install.packages("pheatmap")
+library(pheatmap)
+pheatmap::pheatmap(data)
+
+## add labels on x-axis
+colnames(data) <- c(labels) 
+pheatmap::pheatmap(data)
+
+## store heatmap on disk, you will find the resulting picture in the root of your project
+png(filename = "heatmap_qcproteomics.png", width = 10, height = 22, units = "cm", res = 300)
+pheatmap::pheatmap(data)
+dev.off()
+
+
+
+```
+
+## Customizing `pheatmap` colours
+```{r, eval=FALSE}
+
+RColorBrewer::display.brewer.all()
+
+# creates a own color palette from red to green
+my_palette_1 <- colorRampPalette(c("red", "yellow", "green"))(n = 299)
+my_palette_2 <- colorRampPalette(c("black", "yellow", "green"))(n = 299)
+my_palette_3 <- colorRampPalette(c("red", "black", "green"))(n = 299)
+
+my_palette_4 <- RColorBrewer::brewer.pal(n = 11, name = "PRGn")
+
+pheatmap::pheatmap(data, color = my_palette_1)
+pheatmap::pheatmap(data, color = my_palette_2)
+pheatmap::pheatmap(data, color = my_palette_3)
+pheatmap::pheatmap(data, color = my_palette_4)
+
+# creates a 5 x 5 inch image
+png("let_s_go_crazy_heatmap.png",
+  width = 5*300,        # 5 x 300 pixels
+  height = 12*300,
+  res = 300,            # 300 pixels per inch
+  pointsize = 8)        # smaller font size
+
+pheatmap::pheatmap(data, color = my_palette_4)
+
+dev.off()
+
+```
+
+
+**BONUS QUESTION!**
+
+4) Generate at leat three exploratory data analysis graphs of this data-set, you are free to choose what to plot here! **Work together with your neighbour on this!!**
+ 
+Review the material from the lecture and exercise "Visualizations" and/or refer to the corresponding chapter in "R for Data Science" http://r4ds.had.co.nz/data-visualisation.html  
+ 
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
