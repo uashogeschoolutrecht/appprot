@@ -1,10 +1,9 @@
 ---
 title: "Proteomics"
 author: "Marc A.T. Teunis; Rene Van de Ploeg; Robert Jan Veldman"
-date: "December 3, 2017"
+date: "`r Sys.Date()`"
 output:
-  html_document:
-    css: d:/r_projects/hp_r_course/exercises/exercises_style.css
+  html_document
 ---
 
 Steps in this Demo Case:
@@ -65,15 +64,20 @@ Answer the following questions:
 
 2A) What does the following code do? Why?
 ```{r}
-names(nbt1328_S2) <- stringr::str_replace_all(names(nbt1328_S2), pattern = " ", 
-                                                                 replacement = "_") %>%
+names(nbt1328_S2) <-
+  stringr::str_replace_all(names(nbt1328_S2),
+                           pattern = " ",
+                           replacement = "_") %>%
   tolower()
 
 
-names(nbt1328_S2) <- stringr::str_replace_all(names(nbt1328_S2), pattern = "\\.", 
-                                                                 replacement = "")
+names(nbt1328_S2) <-
+  stringr::str_replace_all(names(nbt1328_S2),
+                           pattern = "\\.",
+                           replacement = "")
 
 names(nbt1328_S2)
+
 ```
 
 2B) Select the following variables from the dataframe `nbt1328_S2`
@@ -133,8 +137,9 @@ Figure 1 from the paper:
 knitr::include_graphics(file.path(root, "images", "bantscheff_figure_1.png"))
 ```
 
-
+## An exploratory plot
 ```{r}
+
 nbt1328_S2_summary %>%
 ggplot(aes(y = sum_counts, x = experiment_id)) +
   geom_point(position = "jitter") 
@@ -145,14 +150,16 @@ ggplot(aes(y = sum_counts, x = experiment_id)) +
 ## Add labellings to data
 ```{r}
 ## load data
-labelling <- read_delim(file.path(root, "data", "labellings_qcproteomics.txt"),
-                         delim = " ") 
+labelling <-
+  read_delim(file.path(root, "data", "labellings_qcproteomics.txt"),
+             delim = " ")
 
 ## select fist two columns
 names(labelling)
 labelling <- labelling[, c(1:5)]
 head(labelling)
-names(labelling) <- c("experiment_id", "cell_line", "method", "chemical", "profile")
+names(labelling) <-
+  c("experiment_id", "cell_line", "method", "chemical", "profile")
 head(labelling)
 labelling
 ## select labelling for heatmap below
@@ -213,7 +220,7 @@ head(data)
 
 Did we succeed to reproduce (partly) the heatmap (figure 1) from the paper Bantscheff et al., 2007?
 
-For the heatmap we use the package `pheatmap`. There are a lot of other packages in R you can use.
+For the heatmap we use the package `pheatmap`. There are a lot of other packages in R/Bionconductor you could use.
 ```{r, fig.height= 16}
 ?pheatmap
 #install.packages("pheatmap")
