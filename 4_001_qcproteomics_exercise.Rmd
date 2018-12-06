@@ -43,13 +43,12 @@ The case used in this exercise is from Bantscheff et al., 2007 (see zip-archive 
 ## Load the data
 ```{r}
 
-#nbt1328_S3 <- readr::read_delim(file = file.path(root, "data", "nbt1328-S3.txt"),
-#                                delim = "\t", skip = 2)
-nbt1328_S2 <- readr::read_delim(file = file.path(root, "data", "nbt1328-S2.txt"),
-                                delim = "\t", skip = 4)
+nbt1328_S2 <- readr::read_delim(
+  file = file.path(root, "data", "nbt1328-S2.txt"),
+  delim = "\t", skip = 4, 
+  na = c("", " "))
 
 head(nbt1328_S2)
-#head(nbt1328_S3)
 
 ```
 
