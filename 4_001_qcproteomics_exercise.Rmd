@@ -242,6 +242,9 @@ dev.off()
 ## Customizing `pheatmap` colours
 ```{r, eval=FALSE}
 
+## closing all graphics devices before moving on
+dev.off()
+
 RColorBrewer::display.brewer.all()
 
 # creates a own color palette from red to green
@@ -256,16 +259,27 @@ pheatmap::pheatmap(data, color = my_palette_2)
 pheatmap::pheatmap(data, color = my_palette_3)
 pheatmap::pheatmap(data, color = my_palette_4)
 
-# creates a 5 x 5 inch image
-png("let_s_go_crazy_heatmap.png",
+# function to write out heatmap to a file
+# demo ...
+
+store_heatmap <- function(mtrx, palette, path, ...){
+
+png(path, ...)        # smaller font size
+
+pheatmap::pheatmap(data, color = palette)
+
+dev.off()
+
+}
+
+store_heatmap(
+  path = "lets_go_crazy.png",
+  palette = my_palette_4,
   width = 5*300,        # 5 x 300 pixels
   height = 12*300,
   res = 300,            # 300 pixels per inch
-  pointsize = 8)        # smaller font size
-
-pheatmap::pheatmap(data, color = my_palette_4)
-
-dev.off()
+  pointsize = 8
+)
 
 ```
 
